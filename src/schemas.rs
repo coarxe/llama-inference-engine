@@ -28,6 +28,7 @@ pub struct GenerationResult {
     pub prompt_tokens: usize,
     pub generated_tokens: usize,
     pub prompt_time: f64,
+    pub ttft: f64,
     pub generation_time: f64,
 }
 

@@ -187,9 +187,7 @@ impl<'a> Worker<'a> {
             ctx,
             sampler,
             model,
-
             generation_config: config,
-
             state_shared,
         })
     }
@@ -332,7 +330,7 @@ impl<'a> Worker<'a> {
 
                 prompt_time: prompt_time.as_secs_f64() * 1000.0,
 
-                ttft: ttft_ms
+                ttft: ttft_ms,
 
                 generation_time: generation_time.as_secs_f64() * 1000.0,
             })
