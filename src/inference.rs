@@ -259,46 +259,43 @@ impl<'a> Worker<'a> {
             // Prompt processing  
 
             let prompt_start = Instant::now();
+            let ttft_start = Instant::now();
 
             self.ctx.decode(&mut batch)?;
 
-            let prompt_time =
-                prompt_start.elapsed();
+            let prompt_time = prompt_start.elapsed();
    
             // Generation  
 
-            let mut generated_tokens =
-                Vec::with_capacity(max_tokens);
+            let mut generated_tokens = Vec::with_capacity(max_tokens);
 
-            let generation_start =
-                Instant::now();
+            let mut ttft_ms = None;
 
-            let mut decoder =
-                UTF_8.new_decoder();
+            let generation_start = Instant::now();
+
+            let mut decoder = UTF_8.new_decoder();
 
             for _ in 0..max_tokens {
 
-                let logits_index =
-                    batch.n_tokens() - 1;
+                let logits_index = batch.n_tokens() - 1;
 
-                let next_token =
-                    self.sampler.sample(
+                let next_token = self.sampler.sample(
                         &self.ctx,
                         logits_index,
                     );
+                if ttft_ms.is_none() {
+                    ttft_ms = Some(
+                        ttft_start.elapsed().as_secs_f64() * 1000.0
+                    );
+                }
 
-                if self.model.is_eog_token(
-                    next_token
-                ) {
+                if self.model.is_eog_token( next_token) {
                     break;
                 }
 
-                generated_tokens.push(
-                    next_token
-                );
+                generated_tokens.push(next_token);
 
-                let piece =
-                    self.model.token_to_piece(
+                let piece = self.model.token_to_piece(
                         next_token,
                         &mut decoder,
                         false,
@@ -310,8 +307,7 @@ impl<'a> Worker<'a> {
 
                 batch.clear();
 
-                let position =
-                    tokens.len()
+                let position = tokens.len()
                     + generated_tokens.len()
                     - 1;
 
@@ -327,16 +323,16 @@ impl<'a> Worker<'a> {
                 )?;
             }
 
-            let generation_time =
-                generation_start.elapsed();
+            let generation_time = generation_start.elapsed();
 
             Ok(GenerationResult {
                 prompt_tokens: tokens.len(),
 
-                generated_tokens:
-                    generated_tokens.len(),
+                generated_tokens: generated_tokens.len(),
 
                 prompt_time: prompt_time.as_secs_f64() * 1000.0,
+
+                ttft: ttft_ms
 
                 generation_time: generation_time.as_secs_f64() * 1000.0,
             })
